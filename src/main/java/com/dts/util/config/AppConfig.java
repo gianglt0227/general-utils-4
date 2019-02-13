@@ -5,8 +5,6 @@
  */
 package com.dts.util.config;
 
-import java.io.File;
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.apache.commons.configuration2.builder.ConfigurationBuilderEvent;
 import org.apache.commons.configuration2.builder.ReloadingFileBasedConfigurationBuilder;
@@ -16,8 +14,10 @@ import org.apache.commons.configuration2.reloading.PeriodicReloadingTrigger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.util.concurrent.TimeUnit;
+
 /**
- *
  * @author giang
  */
 public class AppConfig {
@@ -27,6 +27,10 @@ public class AppConfig {
     private XMLConfiguration defaultConfiguration;
 
     private AppConfig() {
+    }
+
+    public static AppConfig getInstance() {
+        return AppConfigHolder.INSTANCE;
     }
 
     public final void init(File configFile) {
@@ -56,10 +60,6 @@ public class AppConfig {
             logger.error("", ex);
             return defaultConfiguration;
         }
-    }
-
-    public static AppConfig getInstance() {
-        return AppConfigHolder.INSTANCE;
     }
 
     private static class AppConfigHolder {

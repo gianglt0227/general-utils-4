@@ -2,7 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.dts.util</groupId>
-    <artifactId>general-utils-4</artifactId>
+    <artifactId>general-utils</artifactId>
     <version>4.0</version>
     <packaging>jar</packaging>
     <dependencies>
@@ -12,9 +12,9 @@
             <version>1.7.25</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-configuration2</artifactId>
-            <version>2.1.1</version>
+            <groupId>org.cfg4j</groupId>
+            <artifactId>cfg4j-core</artifactId>
+            <version>4.4.0</version>
         </dependency>
         <dependency>
             <groupId>commons-dbutils</groupId>
@@ -51,20 +51,25 @@
             <artifactId>javax.servlet-api</artifactId>
             <version>3.1.0</version>
         </dependency>
-        <!--        <dependency>
-            <groupId>commons-codec</groupId>
-            <artifactId>commons-codec</artifactId>
-            <version>1.10</version>
-        </dependency>-->
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>23.0</version>
         </dependency>
         <dependency>
-            <groupId>commons-beanutils</groupId>
-            <artifactId>commons-beanutils</artifactId>
-            <version>1.9.3</version>
+            <groupId>org.reflections</groupId>
+            <artifactId>reflections</artifactId>
+            <version>0.9.11</version>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-servlet</artifactId>
+            <version>9.4.14.v20181114</version>
         </dependency>
     </dependencies>
     <properties>
@@ -80,8 +85,8 @@
         <repository>
             <id>dts</id>
             <name>DTS repository</name>
-            <url>http://103.56.158.144:8081/artifactory/libs-release</url>
+            <url>http://maven.dtsgroup.com.vn/artifactory/libs-release</url>
         </repository>
     </distributionManagement>
-    <name>general-utils-3</name>
+    <name>general-utils</name>
 </project>

@@ -5,21 +5,20 @@
  */
 package com.dts.util.api;
 
-import com.dts.util.config.AppConfig;
 import com.google.common.base.Stopwatch;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.configuration2.XMLConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -97,8 +96,7 @@ public abstract class AbstractLimitedService extends HttpServlet {
             curIP = request.getRemoteAddr();
         }
         logger.info("ClientIp: " + curIP);
-        XMLConfiguration configuration = AppConfig.getInstance().getConfiguration();
-        String acceptedIp = configuration.getString("api.acceptedIps", "");
+        String acceptedIp = getAcceptedIps();
         if (acceptedIp == null || acceptedIp.isEmpty()) {
             return true;
         }
@@ -111,6 +109,8 @@ public abstract class AbstractLimitedService extends HttpServlet {
         }
         return acceptedIp.equalsIgnoreCase(curIP);
     }
+
+    protected abstract String getAcceptedIps();
 
     protected abstract JsonElement processRequestDetail(HttpServletRequest request, HttpServletResponse response)
             throws Exception;

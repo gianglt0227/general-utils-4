@@ -4,7 +4,6 @@
  */
 package com.dts.util.db;
 
-import com.dts.util.db.resultsethandler.LongHandler;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
@@ -15,6 +14,7 @@ import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.dbutils.handlers.BeanHandler;
 import org.apache.commons.dbutils.handlers.BeanListHandler;
+import org.apache.commons.dbutils.handlers.ScalarHandler;
 
 /**
  *
@@ -40,7 +40,7 @@ public abstract class GenericBaseDao<T> extends SimpleDao {
             conn = getConnection();
             String sql = "SELECT " + SEQUENCE_NAME + ".nextval FROM dual";
             QueryRunner qr = new QueryRunner();
-            return qr.query(conn, sql, new LongHandler());
+            return qr.query(conn, sql, new ScalarHandler<>());
         } finally {
             DbUtils.closeQuietly(conn);
         }

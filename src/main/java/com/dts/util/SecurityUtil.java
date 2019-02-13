@@ -4,18 +4,17 @@
  */
 package com.dts.util;
 
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
-import org.slf4j.LoggerFactory;
-import sun.misc.BASE64Decoder;
-import sun.misc.BASE64Encoder;
+import java.util.Base64;
 
 /**
- *
  * @author GiangLT
  */
 public class SecurityUtil {
@@ -28,8 +27,8 @@ public class SecurityUtil {
      * @throws IOException
      */
     public static byte[] base64ToByte(String data) throws IOException {
-        BASE64Decoder decoder = new BASE64Decoder();
-        return decoder.decodeBuffer(data);
+        Base64.Decoder decoder = Base64.getDecoder();
+        return decoder.decode(data);
     }
 
     /**
@@ -40,8 +39,8 @@ public class SecurityUtil {
      * @throws IOException
      */
     public static String byteToBase64(byte[] data) {
-        BASE64Encoder endecoder = new BASE64Encoder();
-        return endecoder.encode(data);
+        Base64.Encoder encoder = Base64.getEncoder();
+        return encoder.encodeToString(data);
     }
 
     public static byte[] getHash(int iterationNb, String password, byte[] salt) throws NoSuchAlgorithmException, UnsupportedEncodingException {

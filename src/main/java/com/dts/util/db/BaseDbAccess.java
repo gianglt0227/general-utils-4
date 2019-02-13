@@ -5,24 +5,24 @@
  */
 package com.dts.util.db;
 
-import com.dts.util.config.AppConfig;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import java.sql.Connection;
-import java.sql.SQLException;
-import javax.sql.DataSource;
-import org.apache.commons.configuration2.XMLConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.Properties;
+
 /**
- *
  * @author GiangLT
  */
 public abstract class BaseDbAccess {
 
-    protected DataSource dataSource;
     protected final Logger logger = LoggerFactory.getLogger(this.getClass());
+    protected DataSource dataSource;
+    protected Properties properties;
 
     public DataSource getDataSource() {
         return dataSource;
@@ -40,39 +40,38 @@ public abstract class BaseDbAccess {
         return conn;
     }
 
+    public void setProperties(Properties properties) {
+        this.properties = properties;
+        setupDataSource();
+    }
+
     protected DataSource setupDataSource() {
         try {
             logger.info("Setting up datasource");
-            //            String jdbcUrl = "jdbc:mysql://localhost:3306/cbcdb?zeroDateTimeBehavior=convertToNull";
-            //            String userName = "root";
-            //            String password = "123456";
-            //            String classDriverName = "com.mysql.jdbc.Driver";
-            XMLConfiguration config = AppConfig.getInstance().getConfiguration();
-
             HikariConfig hikariConfig = new HikariConfig();
-            hikariConfig.setJdbcUrl(config.getString("jdbc.jdbcUrl", "jdbc:oracle:thin:@192.168.6.248:1521:mca"));
-            hikariConfig.setUsername(config.getString("jdbc.user", "oracle.jdbc.OracleDriver"));
-            hikariConfig.setPassword(config.getString("jdbc.password", "livescreen"));
-            hikariConfig.setAutoCommit(config.getBoolean("jdbc.autoCommit", false));
-            hikariConfig.setConnectionTimeout(config.getLong("jdbc.connectionTimeout", 30000));
-            hikariConfig.setIdleTimeout(config.getLong("jdbc.idleTimeout", 600000));
-            hikariConfig.setMaxLifetime(config.getLong("jdbc.maxLifetime", 600000));
-            hikariConfig.setMinimumIdle(config.getInt("jdbc.minimumIdle", 3));
-            hikariConfig.setMaximumPoolSize(config.getInt("jdbc.maximumPoolSize", 10));
+            hikariConfig.setJdbcUrl(properties.getProperty("jdbc.jdbcUrl", "jdbc:oracle:thin:@192.168.6.248:1521:mca"));
+            hikariConfig.setUsername(properties.getProperty("jdbc.user", "livescreen"));
+            hikariConfig.setPassword(properties.getProperty("jdbc.password", "livescreen"));
+            hikariConfig.setAutoCommit(Boolean.parseBoolean(properties.getProperty("jdbc.autoCommit", "false")));
+            hikariConfig.setConnectionTimeout(Long.valueOf(properties.getProperty("jdbc.connectionTimeout", "30000")));
+            hikariConfig.setIdleTimeout(Long.valueOf(properties.getProperty("jdbc.idleTimeout", "600000")));
+            hikariConfig.setMaxLifetime(Long.valueOf(properties.getProperty("jdbc.maxLifetime", "600000")));
+            hikariConfig.setMinimumIdle(Integer.valueOf(properties.getProperty("jdbc.minimumIdle", "3")));
+            hikariConfig.setMaximumPoolSize(Integer.valueOf(properties.getProperty("jdbc.maximumPoolSize", "10")));
 
-            String driverClassName = config.getString("jdbc.driverClassName", "livescreen");
+            String driverClassName = properties.getProperty("jdbc.driverClassName", "oracle.jdbc.OracleDriver");
             if (driverClassName.contains("mysql") || driverClassName.contains("mariadb")) {
-                hikariConfig.addDataSourceProperty("cachePrepStmts", config.getString("jdbc.mysql.cachePrepStmts", "true"));
-                hikariConfig.addDataSourceProperty("prepStmtCacheSize", config.getString("jdbc.mysql.prepStmtCacheSize", "250"));
-                hikariConfig.addDataSourceProperty("prepStmtCacheSqlLimit", config.getString("jdbc.mysql.prepStmtCacheSqlLimit", "2048"));
-                hikariConfig.addDataSourceProperty("useServerPrepStmts", config.getString("jdbc.mysql.useServerPrepStmts", "true"));
-                hikariConfig.addDataSourceProperty("useLocalSessionState", config.getString("jdbc.mysql.useLocalSessionState", "true"));
-                hikariConfig.addDataSourceProperty("useLocalTransactionState", config.getString("jdbc.mysql.useLocalTransactionState", "true"));
-                hikariConfig.addDataSourceProperty("rewriteBatchedStatements", config.getString("jdbc.mysql.rewriteBatchedStatements", "true"));
-                hikariConfig.addDataSourceProperty("cacheResultSetMetadata", config.getString("jdbc.mysql.cacheResultSetMetadata", "true"));
-                hikariConfig.addDataSourceProperty("cacheServerConfiguration", config.getString("jdbc.mysql.cacheServerConfiguration", "true"));
-                hikariConfig.addDataSourceProperty("elideSetAutoCommits", config.getString("jdbc.mysql.elideSetAutoCommits", "true"));
-                hikariConfig.addDataSourceProperty("maintainTimeStats", config.getString("jdbc.mysql.maintainTimeStats", "false"));
+                hikariConfig.addDataSourceProperty("cachePrepStmts", properties.getProperty("jdbc.mysql.cachePrepStmts", "true"));
+                hikariConfig.addDataSourceProperty("prepStmtCacheSize", properties.getProperty("jdbc.mysql.prepStmtCacheSize", "250"));
+                hikariConfig.addDataSourceProperty("prepStmtCacheSqlLimit", properties.getProperty("jdbc.mysql.prepStmtCacheSqlLimit", "2048"));
+                hikariConfig.addDataSourceProperty("useServerPrepStmts", properties.getProperty("jdbc.mysql.useServerPrepStmts", "true"));
+                hikariConfig.addDataSourceProperty("useLocalSessionState", properties.getProperty("jdbc.mysql.useLocalSessionState", "true"));
+                hikariConfig.addDataSourceProperty("useLocalTransactionState", properties.getProperty("jdbc.mysql.useLocalTransactionState", "true"));
+                hikariConfig.addDataSourceProperty("rewriteBatchedStatements", properties.getProperty("jdbc.mysql.rewriteBatchedStatements", "true"));
+                hikariConfig.addDataSourceProperty("cacheResultSetMetadata", properties.getProperty("jdbc.mysql.cacheResultSetMetadata", "true"));
+                hikariConfig.addDataSourceProperty("cacheServerConfiguration", properties.getProperty("jdbc.mysql.cacheServerConfiguration", "true"));
+                hikariConfig.addDataSourceProperty("elideSetAutoCommits", properties.getProperty("jdbc.mysql.elideSetAutoCommits", "true"));
+                hikariConfig.addDataSourceProperty("maintainTimeStats", properties.getProperty("jdbc.mysql.maintainTimeStats", "false"));
             } else {
                 hikariConfig.setDriverClassName(driverClassName);
             }

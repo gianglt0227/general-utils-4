@@ -5,24 +5,25 @@
  */
 package com.dts.util.app;
 
-import com.dts.util.config.AppConfig;
 import com.dts.util.concurrent.ExecutorManager;
+import com.dts.util.config.AppConfig;
 import com.dts.util.db.DbAccess;
-import java.io.File;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.List;
-import javax.xml.ws.Endpoint;
-import javax.xml.ws.handler.Handler;
-import org.apache.commons.configuration2.HierarchicalConfiguration;
-import org.apache.commons.configuration2.XMLConfiguration;
-import org.apache.commons.configuration2.tree.ImmutableNode;
+import lombok.NonNull;
 import org.apache.commons.dbutils.DbUtils;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.servlet.ServletHandler;
+import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.annotation.WebServlet;
+import java.io.File;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.Set;
+
 /**
- *
  * @author GiangLT
  */
 public abstract class AbstractApplication implements IApplication {
@@ -67,43 +68,46 @@ public abstract class AbstractApplication implements IApplication {
         } finally {
             DbUtils.closeQuietly(conn);
         }
-//        String enableMonitor = config.getProperty("enableMonitor", "true", "jdbc");
-//        if (enableMonitor.equalsIgnoreCase("true")) {
-//            logger.debug("DB statistic is enabled, so scheduling it");
-//            long delay = Long.parseLong(config.getProperty("monitorDelayMs", "60000", "jdbc"));
-//            ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("db-monitor-%d").build();
-//            ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(1, threadFactory);
-////            ExecutorManager.getInstance().addExecutor("DB statistic", executor);
-//            DbAccess2.getInstance().enableMonitor(executor, delay, delay);
-//        }
         logger.info("Done setup Database access");
     }
 
-    public void setupExecutorManager() {
-        ExecutorManager.getInstance().createThreadPools();
-        ExecutorManager.getInstance().scheduleAllTasks();
+    public void setupExecutorManager(@NonNull String scannedPackage) {
+        ExecutorManager.getInstance().scheduleAllTasks(scannedPackage);
         logger.info("Done setup ExecutorManager");
     }
 
-    public void setupWebServices() {
-        XMLConfiguration config = AppConfig.getInstance().getConfiguration();
-        List<HierarchicalConfiguration<ImmutableNode>> webServices = config.configurationsAt("webServices");
-        webServices.forEach((webServiceNode) -> {
-            try {
-                String webServiceName = webServiceNode.getString("name", "");
-                String className = webServiceNode.getString("class", "");
-                Endpoint endPoint = Endpoint.create(Class.forName(className).newInstance());
-                List<Handler> handlerChain = endPoint.getBinding().getHandlerChain();
-                handlerChain.add(new WsServerLoggingHandler());
-                endPoint.getBinding().setHandlerChain(handlerChain);
+    public void setupHttpRequestHandlers(
+            @NonNull String scannedPackage,
+            @NonNull String host,
+            @NonNull int port,
+            @NonNull long idleTimeout) throws Exception {
+        // The Server
+        Server server = new Server();
 
-                String url = webServiceNode.getString("url", "");
-                endPoint.publish(url);
-                logger.info("Web service [{}] was published successfuly. WSDL URL: {}?WSDL", webServiceName, url);
+        // HTTP connector
+        ServerConnector httpServerConnector = new ServerConnector(server);
+        httpServerConnector.setHost(host);
+        httpServerConnector.setPort(port);
+        httpServerConnector.setIdleTimeout(idleTimeout);
+        server.addConnector(httpServerConnector);
+
+        ServletHandler handler = new ServletHandler();
+        server.setHandler(handler);
+
+        Reflections reflections = new Reflections(scannedPackage);
+        Set<Class<?>> servletClasses = reflections.getTypesAnnotatedWith(WebServlet.class);
+        for (Class<?> servletClass : servletClasses) {
+            try {
+                WebServlet annotation = servletClass.getAnnotation(WebServlet.class);
+                handler.addServletWithMapping(servletClass.getSimpleName(), annotation.urlPatterns()[0]);
             } catch (Exception ex) {
                 logger.error("", ex);
             }
-        });
+        }
+
+        // Start the server
+        server.start();
+        server.join();
     }
 
 }

@@ -5,25 +5,23 @@
  */
 package com.dts.util.api;
 
-import com.dts.util.config.AppConfig;
 import com.google.common.base.Stopwatch;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.MalformedURLException;
-import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.configuration2.XMLConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.MalformedURLException;
+import java.util.concurrent.TimeUnit;
 
 /**
- *
  * @author giang
  */
 public abstract class AbstractLimitedI18nService extends HttpServlet {
@@ -87,8 +85,7 @@ public abstract class AbstractLimitedI18nService extends HttpServlet {
             curIP = request.getRemoteAddr();
         }
         logger.info("ClientIp: " + curIP);
-        XMLConfiguration configuration = AppConfig.getInstance().getConfiguration();
-        String acceptedIp = configuration.getString("api.acceptedIps", "");
+        String acceptedIp = getAcceptedIps();
         if (acceptedIp == null || acceptedIp.isEmpty()) {
             return true;
         }
@@ -102,6 +99,8 @@ public abstract class AbstractLimitedI18nService extends HttpServlet {
         return acceptedIp.equalsIgnoreCase(curIP);
     }
 
+    protected abstract String getAcceptedIps();
+
     private void loadResource() throws MalformedURLException {
 //        XMLConfiguration configuration = AppConfig.getInstance().getConfiguration();
 //        URL[] urls = {file.toURI().toURL()};
@@ -113,13 +112,14 @@ public abstract class AbstractLimitedI18nService extends HttpServlet {
             throws Exception;
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
+
     /**
      * Handles the HTTP <code>GET</code> method.
      *
-     * @param request servlet request
+     * @param request  servlet request
      * @param response servlet response
      * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
+     * @throws IOException      if an I/O error occurs
      */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -130,10 +130,10 @@ public abstract class AbstractLimitedI18nService extends HttpServlet {
     /**
      * Handles the HTTP <code>POST</code> method.
      *
-     * @param request servlet request
+     * @param request  servlet request
      * @param response servlet response
      * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
+     * @throws IOException      if an I/O error occurs
      */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)

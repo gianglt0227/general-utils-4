@@ -13,7 +13,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
-import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,22 +33,22 @@ public class GeneratorSeq {
     }
 
     private void init() {
-        lock.lock();
-        try {
-            Configuration config = AppConfig.getInstance().getConfiguration();
-            String sequenceFilePath = config.getString("general.sequenceFilePath", System.getProperty("user.home") + "/config/sequence.txt");
-            sequenceFile = new File(sequenceFilePath);
-            if (!sequenceFile.exists()) {
-                sequenceFile.createNewFile();
-                FileUtils.writeStringToFile(sequenceFile, String.valueOf(seq.getAndIncrement()), false);
-            } else {
-                seq = new AtomicInteger(Integer.parseInt(FileUtils.readFileToString(sequenceFile).trim()));
-            }
-        } catch (Exception ex) {
-            logger.error("", ex);
-        } finally {
-            lock.unlock();
-        }
+//        lock.lock();
+//        try {
+//            Configuration config = AppConfig.getInstance().getConfiguration();
+//            String sequenceFilePath = config.getString("general.sequenceFilePath", System.getProperty("user.home") + "/config/sequence.txt");
+//            sequenceFile = new File(sequenceFilePath);
+//            if (!sequenceFile.exists()) {
+//                sequenceFile.createNewFile();
+//                FileUtils.writeStringToFile(sequenceFile, String.valueOf(seq.getAndIncrement()), false);
+//            } else {
+//                seq = new AtomicInteger(Integer.parseInt(FileUtils.readFileToString(sequenceFile).trim()));
+//            }
+//        } catch (Exception ex) {
+//            logger.error("", ex);
+//        } finally {
+//            lock.unlock();
+//        }
     }
 
     public int getNextSequence() throws Exception {

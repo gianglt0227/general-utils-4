@@ -5,7 +5,6 @@
  */
 package com.dts.util.db;
 
-import com.dts.util.db.resultsethandler.LongHandler;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -20,6 +19,7 @@ import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.dbutils.handlers.ArrayListHandler;
 import org.apache.commons.dbutils.handlers.BeanHandler;
 import org.apache.commons.dbutils.handlers.BeanListHandler;
+import org.apache.commons.dbutils.handlers.ScalarHandler;
 
 /**
  *
@@ -82,7 +82,7 @@ public class ReflectBaseDao<T> extends SimpleDao {
         try {
             conn = getConnection();
             QueryRunner qr = new QueryRunner();
-            return qr.query(conn, sql, new LongHandler(), criteria.values().toArray());
+            return qr.query(conn, sql, new ScalarHandler<>(), criteria.values().toArray());
         } finally {
             DbUtils.closeQuietly(conn);
         }

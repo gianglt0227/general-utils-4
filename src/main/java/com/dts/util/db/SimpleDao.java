@@ -34,18 +34,18 @@ public class SimpleDao {
         try {
             conn = getConnection();
             QueryRunner qr = new QueryRunner();
-            return qr.query(conn, sql, new ScalarHandler<>(), params);
+            return qr.query(conn, sql, new ScalarHandler<T>(), params);
         } finally {
             DbUtils.closeQuietly(conn);
         }
     }
 
-    protected <T> List<T> getSingleColumnResult(Class<T> clazz, String sql, Object... params) throws SQLException {
+    protected <T> List<T> getSingleColumnResult(String sql, Object... params) throws SQLException {
         Connection conn = null;
         try {
             conn = getConnection();
             QueryRunner qr = new QueryRunner();
-            return qr.query(conn, sql, new ColumnListHandler<>(), params);
+            return qr.query(conn, sql, new ColumnListHandler<T>(), params);
         } finally {
             DbUtils.closeQuietly(conn);
         }

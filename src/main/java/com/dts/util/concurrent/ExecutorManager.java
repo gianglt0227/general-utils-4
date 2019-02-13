@@ -5,37 +5,27 @@
 package com.dts.util.concurrent;
 
 //import com.elcom.luckymusic.provisioning.Constant;
-import com.dts.util.config.AppConfig;
+
+import com.dts.util.annotation.ScheduledTask;
 import com.google.common.base.Splitter;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import org.joda.time.DateTime;
+import org.joda.time.Seconds;
+import org.reflections.Reflections;
+
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionHandler;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import org.apache.commons.configuration2.HierarchicalConfiguration;
-import org.apache.commons.configuration2.XMLConfiguration;
-import org.apache.commons.configuration2.tree.ImmutableNode;
-import org.joda.time.DateTime;
-import org.joda.time.Seconds;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.concurrent.*;
 
 /**
- *
  * @author GiangLT
  */
+@Slf4j
 public class ExecutorManager {
 
-    private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private static ExecutorManager instance;
     private final ConcurrentMap<String, ExecutorService> executorMap = new ConcurrentHashMap<>();
 
@@ -50,23 +40,30 @@ public class ExecutorManager {
         return instance;
     }
 
+    public static void main(String[] args) {
+        ExecutorManager em = new ExecutorManager();
+        int initialDelaySec = em.getInitialDelaySec("21:00:00", 5, TimeUnit.NANOSECONDS);
+        System.out.println(initialDelaySec);
+
+    }
+
     public synchronized ExecutorService addExecutor(String executorName, ExecutorService executor) {
-        logger.trace("Adding executor {}", executorName);
+        log.trace("Adding executor {}", executorName);
         return executorMap.putIfAbsent(executorName, executor);
     }
 
     public synchronized ExecutorService updateExecutor(String executorName, ExecutorService executor) {
-        logger.trace("Updating executor {}", executorName);
+        log.trace("Updating executor {}", executorName);
         return executorMap.put(executorName, executor);
     }
 
     public synchronized ExecutorService removeExecutor(String executorName) {
-        logger.trace("Removing executor {}", executorName);
+        log.trace("Removing executor {}", executorName);
         return executorMap.remove(executorName);
     }
 
     public ExecutorService getExecutor(String executorName) {
-//        logger.trace("Returning executor {}", executorName);
+//        log.trace("Returning executor {}", executorName);
         ExecutorService executorService = executorMap.get(executorName);
         if (executorService == null) {
             executorService = createDefaultThreadPool(executorName);
@@ -76,7 +73,7 @@ public class ExecutorManager {
     }
 
     public ScheduledThreadPoolExecutor getScheduledExecutor(String executorName) {
-//        logger.trace("Returning executor {}", executorName);
+//        log.trace("Returning executor {}", executorName);
         ExecutorService executorService = executorMap.get(executorName);
         if (executorService == null || !(executorService instanceof ScheduledThreadPoolExecutor)) {
             executorService = createDefaultScheduledThreadPool(executorName);
@@ -107,7 +104,7 @@ public class ExecutorManager {
     }
 
     private ExecutorService createThreadPool(String poolName, int corePoolSize, int maximumPoolSize, long keepAliveTime, int queueSize, String baseThreadName) {
-        logger.trace("Creating pool: {}", poolName);
+        log.trace("Creating pool: {}", poolName);
 
         BlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<>(queueSize, true);
         RejectedExecutionHandler rejectedExecutionHandler = new BaseRejectedHandler(poolName);
@@ -115,69 +112,27 @@ public class ExecutorManager {
 
         ThreadPoolExecutor executor = new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, TimeUnit.MILLISECONDS, workQueue, threadFactory, rejectedExecutionHandler);
         executor.prestartAllCoreThreads();
-        logger.debug("Done creating pool: {}", poolName);
+        log.debug("Done creating pool: {}", poolName);
 
         return executor;
     }
 
-    public void createThreadPools() {
-        XMLConfiguration xmlconfig = AppConfig.getInstance().getConfiguration();
-        List<HierarchicalConfiguration<ImmutableNode>> threadPools = xmlconfig.configurationsAt("threadPools.pool");
-        for (HierarchicalConfiguration<ImmutableNode> threadPool : threadPools) {
-            try {
-                String poolName = threadPool.getString("poolName", "");
-                int corePoolSize = threadPool.getInt("corePoolSize", 15);
-                int maximumPoolSize = threadPool.getInt("maximumPoolSize", 50);
-                long keepAliveTime = threadPool.getLong("keepAliveTime", 60000);
-                int queueSize = threadPool.getInt("queueSize", 10000);
-                String baseThreadName = threadPool.getString("baseThreadName", poolName);
+    public void scheduleAllTasks(@NonNull String scannedPackage) {
+        Reflections reflections = new Reflections(scannedPackage);
+        Set<Class<?>> scheduledTaskClasses = reflections.getTypesAnnotatedWith(ScheduledTask.class);
 
-                ExecutorService executor = createThreadPool(poolName, corePoolSize, maximumPoolSize, keepAliveTime, queueSize, baseThreadName);
-                this.addExecutor(poolName, executor);
-            } catch (Exception ex) {
-                logger.error("", ex);
-            }
-        }
-    }
-
-    /*
-    public void createScheduledThreadPools() {
-        XMLConfiguration xmlconfig = AppConfig.getInstance().getConfiguration();
-        List<HierarchicalConfiguration<ImmutableNode>> scheduledThreadPools = xmlconfig.configurationsAt("scheduledThreadPools.pool");
-        for (HierarchicalConfiguration<ImmutableNode> threadPool : scheduledThreadPools) {
+        for (Class<?> scheduledTaskClass : scheduledTaskClasses) {
             try {
-                String poolName = threadPool.getString("poolName", "");
-                logger.trace("Creating scheduled pool: {}", poolName);
-                int corePoolSize = threadPool.getInt("corePoolSize", 1);
-                RejectedExecutionHandler rejectedExecutionHandler = new BaseRejectedHandler(poolName);
-                String baseThreadName = threadPool.getString("baseThreadName", poolName);
-                ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat(baseThreadName + "-%d").build();
-                ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(corePoolSize, threadFactory, rejectedExecutionHandler);
-                executor.prestartAllCoreThreads();
-
-                logger.debug("Done creating scheduled pool: {}", poolName);
-                this.addExecutor(poolName, executor);
-            } catch (Exception ex) {
-                logger.error("", ex);
-            }
-        }
-    }
-     */
-    public void scheduleAllTasks() {
-        XMLConfiguration xmlconfig = AppConfig.getInstance().getConfiguration();
-        List<HierarchicalConfiguration<ImmutableNode>> scheduledTasks = xmlconfig.configurationsAt("scheduledTasks.task");
-        for (HierarchicalConfiguration<ImmutableNode> scheduledTask : scheduledTasks) {
-            try {
-                String taskName = scheduledTask.getString("taskName", "");
-                String qualifiedClassName = scheduledTask.getString("class", "");
-                Object object = Class.forName(qualifiedClassName).newInstance();
+                ScheduledTask annotation = scheduledTaskClass.getAnnotation(ScheduledTask.class);
+                String taskName = annotation.taskName();
+                Object object = scheduledTaskClass.newInstance();
                 if (object instanceof Runnable) {
                     Runnable runnable = (Runnable) object;
-                    String executorName = scheduledTask.getString("executorName", "");
-                    int corePoolSize = scheduledTask.getInt(".corePoolSize", 1);
-                    long period = scheduledTask.getLong("period", 86400 * 1000);
-                    String startTime = scheduledTask.getString("startTime", "");
-                    String timeUnitStr = scheduledTask.getString("timeUnit", "MILLISECONDS");
+                    String executorName = annotation.executorName();
+                    int corePoolSize = annotation.corePoolSize();
+                    long period = annotation.period();
+                    String startTime = annotation.startTime();
+                    TimeUnit timeUnit = annotation.timeUnit();
 
                     RejectedExecutionHandler rejectedExecutionHandler = new BaseRejectedHandler(executorName);
                     ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat(taskName + "-%d").build();
@@ -186,16 +141,14 @@ public class ExecutorManager {
                     this.addExecutor(executorName, executor);
 
                     long initialDelay = 0;
-                    TimeUnit timeUnit = TimeUnit.valueOf(timeUnitStr);
-
                     if (startTime != null && !startTime.isEmpty()) {
-                        logger.debug("{} will start at {}, and repeat every {} {}", taskName, startTime, period, timeUnitStr);
+                        log.debug("{} will start at {}, and repeat every {} {}", taskName, startTime, period, timeUnit);
                         initialDelay = getInitialDelaySec(startTime, period, timeUnit);
-                        logger.debug("{} initialDelay is {} seconds", taskName, initialDelay);
+                        log.debug("{} initialDelay is {} seconds", taskName, initialDelay);
                     } else {
-                        logger.debug("{} will repeat every {} {}", taskName, period, timeUnitStr);
+                        log.debug("{} will repeat every {} {}", taskName, period, timeUnit);
                     }
-                    logger.debug("{} first run will be in {} seconds", taskName, initialDelay);
+                    log.debug("{} first run will be in {} seconds", taskName, initialDelay);
 
                     if (TimeUnit.MILLISECONDS.equals(timeUnit)
                             || TimeUnit.MICROSECONDS.equals(timeUnit)
@@ -207,17 +160,17 @@ public class ExecutorManager {
                     }
 
                     for (int i = 0; i < corePoolSize; i++) {
-                        logger.trace("!!Scheduling: {}, initDelay: {}, period: {}, TimeUnit: {}", taskName, initialDelay, period, timeUnit);
+                        log.trace("!!Scheduling: {}, initDelay: {}, period: {}, TimeUnit: {}", taskName, initialDelay, period, timeUnit);
                         executor.scheduleAtFixedRate(runnable, initialDelay, period, timeUnit);
                     }
 
-                    boolean runOnStart = scheduledTask.getBoolean("runOnStart", false);
+                    boolean runOnStart = annotation.runOnStart();
                     if (runOnStart) {
                         executor.execute(runnable);
                     }
                 }
             } catch (Exception ex) {
-                logger.error("", ex);
+                log.error("", ex);
             }
         }
     }
@@ -255,12 +208,5 @@ public class ExecutorManager {
             initialDelay = Seconds.secondsBetween(now, runTime).getSeconds();
         }
         return initialDelay;
-    }
-
-    public static void main(String[] args) {
-        ExecutorManager em = new ExecutorManager();
-        int initialDelaySec = em.getInitialDelaySec("21:00:00", 5, TimeUnit.NANOSECONDS);
-        System.out.println(initialDelaySec);
-
     }
 }
