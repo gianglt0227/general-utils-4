@@ -5,6 +5,10 @@
  */
 package com.dts.util.app;
 
+import lombok.NonNull;
+
+import java.io.File;
+
 /**
  *
  * @author GiangLT
@@ -19,7 +23,7 @@ public interface IApplication {
 
     public void restart(String[] args);
 
-    public void initConfig(String logFolder, String configFolder, String log4jFileName, String configFileName);
+    public void initConfig(@NonNull File configFile);
 
     public void setupDatabaseAccess();
 }

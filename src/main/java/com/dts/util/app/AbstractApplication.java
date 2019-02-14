@@ -9,6 +9,7 @@ import com.dts.util.concurrent.ExecutorManager;
 import com.dts.util.config.AppConfig;
 import com.dts.util.db.DbAccess;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbutils.DbUtils;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -28,21 +29,11 @@ import java.util.Set;
  */
 public abstract class AbstractApplication implements IApplication {
 
-    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+    protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Override
-    public void initConfig(String logFolder, String configFolder, String log4jFileName, String configFileName) {
-        File file = new File(logFolder);
-        if (!file.exists()) {
-            file.mkdirs();
-        }
-
-        file = new File(configFolder);
-        if (!file.exists()) {
-            file.mkdirs();
-        }
-
-        AppConfig.getInstance().init(new File(configFolder + File.separator + configFileName));
+    public void initConfig(File configFile) {
+        AppConfig.getInstance().init(configFile);
         logger.info("Configuration Initiated");
 
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
@@ -76,7 +67,7 @@ public abstract class AbstractApplication implements IApplication {
         logger.info("Done setup ExecutorManager");
     }
 
-    public void setupHttpRequestHandlers(
+    public void setupServlets(
             @NonNull String scannedPackage,
             @NonNull String host,
             @NonNull int port,
@@ -99,7 +90,8 @@ public abstract class AbstractApplication implements IApplication {
         for (Class<?> servletClass : servletClasses) {
             try {
                 WebServlet annotation = servletClass.getAnnotation(WebServlet.class);
-                handler.addServletWithMapping(servletClass.getSimpleName(), annotation.urlPatterns()[0]);
+                handler.addServletWithMapping(servletClass.getName(), annotation.urlPatterns()[0]);
+                logger.debug("Started WebServlet {} at context: {}", annotation.name(), annotation.urlPatterns()[0]);
             } catch (Exception ex) {
                 logger.error("", ex);
             }

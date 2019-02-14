@@ -62,7 +62,7 @@ public abstract class AbstractLimitedService extends HttpServlet {
                 ApiError error = new ApiError(405, "Invalid IP");
                 jsonResult = gson.toJson(error);
             } else {
-                JsonElement jsonElement = processRequestDetail(request, response);
+                JsonElement jsonElement = processRequestDetail(request);
                 jsonResult = gson.toJson(jsonElement);
             }
         } catch (InvalidApiParamException ex) {
@@ -112,7 +112,7 @@ public abstract class AbstractLimitedService extends HttpServlet {
 
     protected abstract String getAcceptedIps();
 
-    protected abstract JsonElement processRequestDetail(HttpServletRequest request, HttpServletResponse response)
+    protected abstract JsonElement processRequestDetail(HttpServletRequest request)
             throws Exception;
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">

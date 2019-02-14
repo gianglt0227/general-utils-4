@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.dts.util.app;
+package com.dts.util;
 
 import java.io.File;
 import java.io.FileFilter;

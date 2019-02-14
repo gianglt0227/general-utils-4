@@ -5,26 +5,28 @@
  */
 package com.dts.util.config;
 
-import org.apache.commons.configuration2.XMLConfiguration;
-import org.apache.commons.configuration2.builder.ConfigurationBuilderEvent;
-import org.apache.commons.configuration2.builder.ReloadingFileBasedConfigurationBuilder;
-import org.apache.commons.configuration2.builder.fluent.Parameters;
-import org.apache.commons.configuration2.event.EventListener;
-import org.apache.commons.configuration2.reloading.PeriodicReloadingTrigger;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+import org.cfg4j.provider.ConfigurationProvider;
+import org.cfg4j.provider.ConfigurationProviderBuilder;
+import org.cfg4j.source.ConfigurationSource;
+import org.cfg4j.source.context.filesprovider.ConfigFilesProvider;
+import org.cfg4j.source.files.FilesConfigurationSource;
+import org.cfg4j.source.reload.ReloadStrategy;
+import org.cfg4j.source.reload.strategy.PeriodicalReloadStrategy;
 
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 /**
  * @author giang
  */
+@Slf4j
 public class AppConfig {
 
-    protected final Logger logger = LoggerFactory.getLogger(this.getClass());
-    private ReloadingFileBasedConfigurationBuilder<XMLConfiguration> builder;
-    private XMLConfiguration defaultConfiguration;
+    private ConfigurationProvider configurationProvider;
 
     private AppConfig() {
     }
@@ -35,31 +37,26 @@ public class AppConfig {
 
     public final void init(File configFile) {
         try {
-            Parameters params = new Parameters();
-            builder = new ReloadingFileBasedConfigurationBuilder<>(XMLConfiguration.class).configure(params.fileBased().setFile(configFile));
-            PeriodicReloadingTrigger trigger = new PeriodicReloadingTrigger(builder.getReloadingController(), null, 1, TimeUnit.MINUTES);
-            trigger.start();
+            Path path = Paths.get(configFile.getAbsolutePath());
+            log.debug("ConfigFile: {}, Path: {}", configFile.getAbsolutePath(), path);
+            ConfigFilesProvider configFilesProvider = () -> Arrays.asList(path);
+            ConfigurationSource source = new FilesConfigurationSource(configFilesProvider);
 
-            builder.addEventListener(ConfigurationBuilderEvent.RESET, new EventListener<ConfigurationBuilderEvent>() {
+            // Reload configuration every 5 seconds
+            ReloadStrategy reloadStrategy = new PeriodicalReloadStrategy(5, TimeUnit.SECONDS);
 
-                public void onEvent(ConfigurationBuilderEvent event) {
-                    logger.trace("Configuration reset: {}", event);
-                }
-            });
-
-            defaultConfiguration = builder.getConfiguration();
+            // Create provider
+            configurationProvider = new ConfigurationProviderBuilder()
+                    .withConfigurationSource(source)
+                    .withReloadStrategy(reloadStrategy)
+                    .build();
         } catch (Exception ex) {
-            logger.error("", ex);
+            log.error("", ex);
         }
     }
 
-    public XMLConfiguration getConfiguration() {
-        try {
-            return builder.getConfiguration();
-        } catch (Exception ex) {
-            logger.error("", ex);
-            return defaultConfiguration;
-        }
+    public ConfigurationProvider getConfiguration() {
+        return configurationProvider;
     }
 
     private static class AppConfigHolder {
